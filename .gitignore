@@ -1,0 +1,26 @@
+# Compilación
+build/
+*.o
+*.out
+*.exe
+
+# Datasets y resultados
+data/
+results/
+plots/
+
+# Datos grandes
+data/*.bin
+data/*.zip
+data/*.tar.gz
+
+# Outputs generados
+outputs/trees/*.bin
+outputs/results/*.csv
+outputs/plots/*.png
+outputs/plots/*.pdf
+outputs/results/*.txt
+
+# Sistema / editor
+.vscode/
+.DS_Store
