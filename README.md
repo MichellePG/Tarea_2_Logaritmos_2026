@@ -27,9 +27,9 @@ TAREA_2_LOGARITMOS_2026/
 │
 ├── src/
 │   ├── avl/                    # Implementación AVL
-│   │   ├── ??
-│   │   ├── ??
-│   │   └── ??
+│   │   ├── AVLNode.hpp
+│   │   ├── AVLTree.hpp
+│   │   └── AVLTree.cpp
 │   │
 │   ├── splay/                  # Implementación Splay Tree
 │   │   ├── SplayNode.hpp
