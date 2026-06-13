@@ -21,6 +21,14 @@ outputs/plots/*.png
 outputs/plots/*.pdf
 outputs/results/*.txt
 
+# Ejecutable
+tarea2
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
 # Sistema / editor
 .vscode/
 .DS_Store

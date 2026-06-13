@@ -151,10 +151,12 @@ void SplayTree::insert(uint32_t key) {
 // Si se encuentra: splay(x), retorna true.
 // Si no: splay del último nodo visitado, retorna false.
 bool SplayTree::search(uint32_t key) {
+    lastCost = 0;
     SplayNode* curr = root;
     SplayNode* last = nullptr;
 
     while (curr != nullptr) {
+        ++lastCost;
         last = curr;
         if (key == curr->key) {
             splay(curr);
@@ -170,4 +172,22 @@ bool SplayTree::search(uint32_t key) {
     // Si no se encontró, splay del último nodo visitado (si existe)
     if (last) splay(last);
     return false;
+}
+
+
+// Recorrido en preorden (sino se desborda pila en arboles de N = 2^25 nodos).
+std::vector<uint32_t> SplayTree::preorder() const {
+    std::vector<uint32_t> keys;
+    if (!root) return keys;
+
+    std::vector<SplayNode*> stack;
+    stack.push_back(root);
+    while (!stack.empty()) {
+        SplayNode* node = stack.back();
+        stack.pop_back();
+        keys.push_back(node->key);
+        if (node->right) stack.push_back(node->right);
+        if (node->left)  stack.push_back(node->left);
+    }
+    return keys;
 }

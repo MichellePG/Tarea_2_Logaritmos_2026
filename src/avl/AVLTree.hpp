@@ -33,8 +33,17 @@ public:
      */
     bool search(uint32_t key) override;
 
+    /**
+     * Costo (nodos visitados) del último search(). Para un AVL coincide con
+     * el largo del camino recorrido desde la raíz, es decir O(log n).
+     */
+    unsigned long long getLastCost() const override { return lastCost; }
+
 private:
     AVLNode* root;
+
+    // Cantidad de nodos visitados en la última búsqueda.
+    unsigned long long lastCost = 0;
 
     /**
      * Inserta una clave en el subárbol indicado y retorna su nueva raíz.

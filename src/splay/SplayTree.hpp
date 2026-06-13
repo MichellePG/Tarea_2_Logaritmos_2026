@@ -1,6 +1,8 @@
 #pragma once
 #include "SplayNode.hpp"
 #include "../../include/TreeInterface.hpp"
+#include <vector>
+#include <cstdint>
 
 /**
  * Implementación de Splay Tree.
@@ -16,8 +18,25 @@ public:
     // Busca key, retorna true si existe. Siempre termina con splay().
     bool search(uint32_t key) override;
 
+    /**
+     * Costo (nodos visitados durante el descenso) del último search().
+     * El trabajo del splay posterior es proporcional a esta profundidad, por
+     * lo que sirve como proxy del costo amortizado de acceso.
+     */
+    unsigned long long getLastCost() const override { return lastCost; }
+
+    /**
+     * Recorrido en preorden de las claves del árbol (sin modificar la
+     * estructura). Usado por el experimento de la Traversal Conjecture.
+     * @return vector con las claves en orden de preorden (raíz, izq, der).
+     */
+    std::vector<uint32_t> preorder() const;
+
 private:
     SplayNode* root;
+
+    // Nodos visitados durante el descenso de la última búsqueda.
+    unsigned long long lastCost = 0;
 
     // --- Rotaciones (sección 3.2 del enunciado) ---
 
