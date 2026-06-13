@@ -23,15 +23,52 @@ void SplayTree::destroy(SplayNode* node) {
 
 
 // Zig: y(x(A,B), C) → x(A, y(B,C))
+// x es hijo izquierdo de y. Rotación a la derecha sobre y.
 void SplayTree::zig(SplayNode* x) {
     SplayNode* y = x->parent;
-    // TODO
+    SplayNode* B = x->right;
+    
+    // B pasa a ser hijo izquierdo de y
+    y->left = B;
+    if (B) B->parent = y;
+
+    // x pasa a ser padre de y
+    x->parent = y->parent;
+    if (y->parent==nullptr) {
+        root = x; // x se convierte en raíz
+    } else if (y == y->parent->left) {
+        y->parent->left = x; 
+    } else {
+        y->parent->right = x;
+    }
+
+    x->right = y;
+    y->parent = x;
+
 }
 
 // Zag: y(A, x(B,C)) → x(y(A,B), C)
+// x es hijo derecho de y. Rotación a la izquierda sobre y.
 void SplayTree::zag(SplayNode* x) {
     SplayNode* y = x->parent;
-    // TODO
+    SplayNode* B = x->left;
+    
+    // B pasa a ser hijo derecho de y
+    y->right = B;
+    if (B) B->parent = y;
+
+    // x pasa a ser padre de y
+    x->parent = y->parent;
+    if (y->parent==nullptr) {
+        root = x; // x se convierte en raíz
+    } else if (y == y->parent->left) {
+        y->parent->left = x;
+    } else {
+        y->parent->right = x; 
+    }
+
+    x->left = y;
+    y->parent = x;
 }
 
 // ----------------------------------------------------------------
@@ -53,18 +90,18 @@ void SplayTree::splay(SplayNode* x) {
             bool xIsLeft = (x == y->left);
             bool yIsLeft = (y == z->left);
 
-            if (xIsLeft && yIsLeft) {
-                // Zig-Zig: primero sobre y, luego sobre x.
-                // TODO
-            } else if (!xIsLeft && !yIsLeft) {
-                // Zag-Zag: primero sobre y, luego sobre x.
-                // TODO
-            } else if (xIsLeft && !yIsLeft) {
-                // Zag-Zig: primero sobre x hacia la izquierda, luego hacia la derecha.
-                // TODO
-            } else {
-                // Zig-Zag: primero sobre x hacia la derecha, luego hacia la izquierda.
-                // TODO
+            if (xIsLeft && yIsLeft) { // Zig-Zig
+                zig(y); // Primero sobre y
+                zig(x); // Luego sobre x
+            } else if (!xIsLeft && !yIsLeft) { // Zag-Zag
+                zag(y); // Primero sobre y
+                zag(x); // Luego sobre x
+            } else if (xIsLeft && !yIsLeft) { // Zag-Zig:
+                zig(x); // Primero sobre x hacia la derecha
+                zag(x); // Luego sobre x hacia la izquierda
+            } else { // Zig-Zag
+                zag(x); // Primero sobre x hacia la izquierda
+                zig(x); // Luego sobre x hacia la derecha
             }
         }
     }
@@ -77,18 +114,60 @@ void SplayTree::splay(SplayNode* x) {
 // ----------------------------------------------------------------
 
 void SplayTree::insert(uint32_t key) {
-    // Inserción BST clásica, luego splay del nuevo nodo
-    // TODO
+    SplayNode* curr = root;
+    SplayNode* parent = nullptr;
+
+    // Bajamos hasta encontrar la posición de inserción
+    while (curr != nullptr) {
+        parent = curr;
+        if (key <= curr->key) {
+            curr = curr->left;
+        } else                  {
+            curr = curr->right;
+        }
+    }
+
+    // Creamos el nuevo nodo y lo enlazamos
+    SplayNode* node = new SplayNode(key);
+    node->parent = parent;
+
+    if (parent == nullptr) {
+        root = node;        // árbol vacío
+    } else if (key <= parent->key) {
+        parent->left = node;
+    } else {
+        parent->right = node;
+    }
+
+    // Llevamos el nuevo nodo a la raíz
+    splay(node);
 }
 
 // ----------------------------------------------------------------
 // Search
 // ----------------------------------------------------------------
 
+// Búsqueda BST clásica.
+// Si se encuentra: splay(x), retorna true.
+// Si no: splay del último nodo visitado, retorna false.
 bool SplayTree::search(uint32_t key) {
-    // Búsqueda BST clásica
-    // Si se encuentra: splay(x), retorna true
-    // Si no: splay del último nodo visitado, retorna false
-    // TODO
+    SplayNode* curr = root;
+    SplayNode* last = nullptr;
+
+    while (curr != nullptr) {
+        last = curr;
+        if (key == curr->key) {
+            splay(curr);
+            return true;
+        }
+        if (key < curr->key) {
+            curr = curr->left;
+        } else {
+            curr = curr->right;
+        }
+    }
+
+    // Si no se encontró, splay del último nodo visitado (si existe)
+    if (last) splay(last);
     return false;
 }

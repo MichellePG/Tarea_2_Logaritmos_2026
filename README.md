@@ -58,13 +58,53 @@ TAREA_2_LOGARITMOS_2026/
 
 ## Implementación
 
+### Interfaz común
+
+Se definió una interfaz común `TreeInterface` que abstrae las operaciones básicas requeridas por los experimentos:
+
+* `insert(uint32_t key)`
+* `search(uint32_t key)`
+
+Tanto `AVLTree` como `SplayTree` implementan esta interfaz, permitiendo ejecutar el mismo conjunto de experimentos sobre ambas estructuras de forma transparente.
+
 ### AVL Tree
 
-Pendiente.
+La implementación del árbol AVL incluye:
+
+* Nodo AVL (`AVLNode`) con clave, punteros a hijos y altura.
+* Inserción recursiva.
+* Búsqueda recursiva.
+* Actualización de alturas.
+* Cálculo del factor de balance.
+* Rotaciones simples izquierda y derecha.
+* Rebalanceo mediante los cuatro casos clásicos:
+
+  * Left-Left (LL)
+  * Left-Right (LR)
+  * Right-Right (RR)
+  * Right-Left (RL)
+
+La memoria utilizada por el árbol se libera recursivamente mediante un destructor.
 
 ### Splay Tree
 
-Pendiente.
+La implementación del Splay Tree incluye:
+
+* Nodo Splay (`SplayNode`) con clave, punteros a hijos y puntero al padre.
+* Inserción BST seguida de una operación `splay`.
+* Búsqueda BST seguida de una operación `splay` sobre el nodo encontrado o sobre el último nodo visitado.
+* Rotaciones primitivas:
+
+  * Zig
+  * Zag
+* Operación `splay` mediante los casos:
+
+  * Zig
+  * Zag
+  * Zig-Zig
+  * Zag-Zag
+  * Zig-Zag
+  * Zag-Zig
 
 ## Compilación
 
