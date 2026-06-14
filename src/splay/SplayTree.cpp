@@ -175,7 +175,8 @@ bool SplayTree::search(uint32_t key) {
 }
 
 
-// Recorrido en preorden (sino se desborda pila en arboles de N = 2^25 nodos).
+// Recorrido en preorden iterativo (así no se desborda la pila en árboles muy
+// profundos, como los de N = 2^25 nodos).
 std::vector<uint32_t> SplayTree::preorder() const {
     std::vector<uint32_t> keys;
     if (!root) return keys;

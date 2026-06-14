@@ -36,7 +36,7 @@ inline constexpr int BASE_EXP_MIN = 10;
 inline constexpr int BASE_EXP_MAX = 14;
 
 // Exponente de N por defecto para los experimentos de teoremas (7.3, 7.4).
-// El enunciado pide 2^25; se puede reducir por por comando
+// El enunciado pide 2^25; se puede reducir por línea de comandos para pruebas.
 inline constexpr int THEOREM_EXP_DEFAULT = 25;
 
 // Cota superior de muestras por-búsqueda que se vuelcan a CSV (para no generar

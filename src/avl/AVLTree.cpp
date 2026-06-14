@@ -23,7 +23,7 @@ void AVLTree::insert(uint32_t key) {
 
 /**
  * Busca una clave en el AVL recorriendo el camino desde la raíz y registra
- * en lastCost la cantidad de nodos visitados
+ * en lastCost la cantidad de nodos visitados (proxy del costo de acceso).
  */
 bool AVLTree::search(uint32_t key) {
     lastCost = 0;
@@ -56,25 +56,6 @@ AVLNode* AVLTree::insertRec(AVLNode* node, uint32_t key) {
 
     updateHeight(node);
     return balance(node);
-}
-
-/**
- * Busca una clave dentro de un subárbol.
- */
-bool AVLTree::searchRec(AVLNode* node, uint32_t key) const {
-    if (node == nullptr) {
-        return false;
-    }
-
-    if (key == node->key) {
-        return true;
-    }
-
-    if (key < node->key) {
-        return searchRec(node->left, key);
-    }
-
-    return searchRec(node->right, key);
 }
 
 /**

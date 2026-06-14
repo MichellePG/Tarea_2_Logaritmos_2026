@@ -51,11 +51,6 @@ private:
     AVLNode* insertRec(AVLNode* node, uint32_t key);
 
     /**
-     * Busca una clave en el subárbol indicado.
-     */
-    bool searchRec(AVLNode* node, uint32_t key) const;
-
-    /**
      * Retorna la altura del nodo, o 0 si es nulo.
      */
     int height(AVLNode* node) const;
