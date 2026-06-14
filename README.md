@@ -37,22 +37,21 @@ TAREA_2_LOGARITMOS_2026/
 │   │   └── SplayTree.cpp
 │   │
 │   └── experiments/            # Experimentación y benchmarks
-│       ├── ??
-│       ├── ??
-│       └── ??
+│       ├── Experiments.hpp      # Firmas y constantes de configuración
+│       └── Experiments.cpp      # Implementación de los 4 bloques (7.2–7.4)
 │
-├── main.cpp 
+├── main.cpp                    # Batería de tests parametrizable
 │
-├── data/                       # Datos generados localmente
+├── scripts/
+│   └── plot.py                 # Generación de gráficos
 │
-├── outputs/                    # Resultados experimentales
-│   ├── results/
-│   └── plots/
+├── outputs/                    # Resultados experimentales (generados)
+│   ├── results/                # CSV de salida
+│   └── plots/                  # Gráficos PNG
 │
-├── docs/                       # Informe y material auxiliar
-│
-├── .gitignore                 
-├── Makefile                    # Compilación y comandos útiles
+├── requirements.txt            # Dependencias de plot.py
+├── .gitignore
+├── makefile                    # Compilación y comandos útiles
 └── README.md                   # Descripción del proyecto
 ```
 
@@ -106,20 +105,90 @@ La implementación del Splay Tree incluye:
   * Zig-Zag
   * Zag-Zig
 
+### Experimentación
+
+El módulo `experiments` implementa la sección 7 del enunciado. Para medir el
+desempeño se instrumentó cada estructura con un contador de costo
+(`getLastCost()`) que registra el número de nodos visitados en la última
+búsqueda. Este costo es un proxy reproducible del costo teórico de acceso y se
+reporta junto con el tiempo de reloj (`std::chrono::steady_clock`).
+
+**Constantes de configuración** (en `src/experiments/Experiments.hpp`):
+
+| Constante   | Valor    | Descripción                                              |
+|-------------|----------|----------------------------------------------------------|
+| `C_PARAM`   | `1`      | Constante `c`: número de búsquedas `M = 10^c · N`.       |
+| `LAMBDA`    | `0.01`   | Parámetro `λ` de la distribución sesgada `P(i)` (7.1.2). |
+| `BASE_SEED` | `0xC0FFEE` | Semilla base (reproducibilidad de datasets/secuencias).|
+
+Bloques experimentales:
+
+- **Escenarios base (7.2):** para `N ∈ {2^10,…,2^14}` y las 4 configuraciones
+  (inserción aleatoria/ordenada × búsqueda uniforme/sesgada). Se registra el
+  **tiempo (y costo) de cada búsqueda a lo largo de toda la secuencia**, para
+  graficar tiempo por búsqueda vs índice con ambas estructuras superpuestas
+  (un gráfico por escenario y por N).
+- **Sequential Access Theorem (7.3.1.a):** secuencia de claves crecientes.
+- **Working Set Theorem (7.3.1.b):** `W ∈ {10, 10², …, 10⁶}`.
+- **Traversal Conjecture (bonus 7.4):** preorden de `T₁` buscado en `T₂`.
+
 ## Compilación
 
-Para compilar los programas, ejecute:
+```bash
+make
+```
 
-Pendiente.
+Genera el ejecutable `tarea2` (requiere `g++` con soporte C++17).
 
 ## Uso
 
-Pendiente.
+```bash
+./tarea2 [bateria] [exp]
+```
 
-### Experimentación
+- `bateria`: `base` | `seq` | `ws` | `traversal` | `all` (por defecto `all`).
+- `exp`: exponente de `N` para los experimentos de teoremas (7.3, 7.4).
+  Por defecto `25` (`N = 2^25`, como pide el enunciado; ~4 GB de RAM).
+  Conviene reducirlo para pruebas rápidas (p. ej. `18`).
 
-Pendiente.
+Ejemplos:
+
+```bash
+./tarea2                 # toda la batería con N = 2^25 (pesado)
+./tarea2 base            # solo escenarios base (7.2)
+./tarea2 seq 20          # Sequential Access con N = 2^20
+make run EXP=18          # toda la batería en modo liviano
+```
+
+Los resultados se escriben como CSV en `outputs/results/`.
+
+## Gráficos
+
+Se usa [`uv`](https://docs.astral.sh/uv/), que instala las dependencias de
+Python automáticamente a partir de la metadata del propio script:
+
+```bash
+uv run scripts/plot.py     # o bien: make plots
+```
+
+Alternativa con `pip`:
+
+```bash
+pip install -r requirements.txt
+python3 scripts/plot.py
+```
+
+Los gráficos PNG se generan en `outputs/plots/`:
+
+- **7.2:** `base_persearch_time_{a,b,c,d}.png` (tiempo por búsqueda vs índice,
+  un subgráfico por N, AVL y Splay superpuestos) y `base_persearch_cost_*.png`
+  (la misma vista usando costo en nodos visitados, más estable al ruido).
+  Complementarios: `base_avg_cost.png`, `base_avg_time.png` (promedios vs N).
+- **7.3.1.a:** `seq_access.png`  ·  **7.3.1.b:** `working_set.png`
+- **7.4 (bonus):** `traversal.png`
 
 ## Limpieza
 
-Para limpiar compilación:
+```bash
+make clean
+```

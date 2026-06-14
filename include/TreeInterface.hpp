@@ -21,4 +21,11 @@ public:
      * @return true si la clave existe, false en caso contrario
      */
     virtual bool search(uint32_t key) = 0;
+
+    /**
+     * Costo (número de nodos visitados / comparaciones) de la última
+     * operación de búsqueda realizada
+     * @return cantidad de nodos visitados en el último search().
+     */
+    virtual unsigned long long getLastCost() const = 0;
 };
