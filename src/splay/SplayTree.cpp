@@ -12,9 +12,16 @@ SplayTree::~SplayTree() {
 
 void SplayTree::destroy(SplayNode* node) {
     if (!node) return;
-    destroy(node->left);
-    destroy(node->right);
-    delete node;
+
+    std::vector<SplayNode*> stack;
+    stack.push_back(node);
+    while (!stack.empty()) {
+        SplayNode* curr = stack.back();
+        stack.pop_back();
+        if (curr->left) stack.push_back(curr->left);
+        if (curr->right) stack.push_back(curr->right);
+        delete curr;
+    }
 }
 
 // ----------------------------------------------------------------
