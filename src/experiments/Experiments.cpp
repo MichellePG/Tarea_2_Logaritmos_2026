@@ -69,6 +69,46 @@ SearchResult searchAll(TreeInterface* tree,
     return res;
 }
 
+// Serie de búsquedas agrupada en "buckets" consecutivos. Para cada bucket se
+// mide el tiempo de pared y se promedia por búsqueda, lo que reduce el ruido
+// de la medición a nivel de nanosegundo y permite graficar el tiempo de
+// ejecución por búsqueda a lo largo de toda la secuencia (sección 7.2).
+struct Bucketed {
+    std::vector<size_t> idx;            // índice de inicio de cada bucket
+    std::vector<double> timePerSearch;  // ns promedio por búsqueda en el bucket
+    std::vector<double> costPerSearch;  // nodos visitados promedio por búsqueda
+    long long totalTimeNs = 0;
+    unsigned long long totalCost = 0;
+};
+
+// Ejecuta las búsquedas en buckets de tamaño ~M/nBuckets, midiendo tiempo y
+// costo por bucket. Si M <= nBuckets el bucket es de tamaño 1 (por búsqueda).
+Bucketed searchBucketed(TreeInterface* tree, const std::vector<uint32_t>& queries,
+                        size_t nBuckets) {
+    Bucketed b;
+    const size_t M = queries.size();
+    if (M == 0) return b;
+    const size_t bucket = std::max<size_t>(1, (M + nBuckets - 1) / nBuckets);
+    for (size_t start = 0; start < M; start += bucket) {
+        const size_t end = std::min(M, start + bucket);
+        unsigned long long costSum = 0;
+        auto t0 = Clock::now();
+        for (size_t i = start; i < end; ++i) {
+            tree->search(queries[i]);
+            costSum += tree->getLastCost();
+        }
+        auto t1 = Clock::now();
+        const long long ns = elapsedNs(t0, t1);
+        const size_t cnt = end - start;
+        b.idx.push_back(start);
+        b.timePerSearch.push_back(static_cast<double>(ns) / cnt);
+        b.costPerSearch.push_back(static_cast<double>(costSum) / cnt);
+        b.totalTimeNs += ns;
+        b.totalCost += costSum;
+    }
+    return b;
+}
+
 // Construye una secuencia de búsquedas uniformes a partir del dataset.
 std::vector<uint32_t> buildUniformQueries(const std::vector<uint32_t>& dataset,
                                           size_t m, std::mt19937_64& rng) {
@@ -164,55 +204,49 @@ void runBaseScenarios() {
                 biased ? buildBiasedQueries(dataset, M, sampler, rng)
                        : buildUniformQueries(dataset, M, rng);
 
-            // ¿Volcamos la serie por-búsqueda? Solo para el mayor N.
-            const bool dumpSeries = (e == BASE_EXP_MAX);
+            // Ambas estructuras se miden sobre la misma secuencia de búsquedas,
+            // registrando el tiempo por búsqueda a lo largo de toda la secuencia.
 
             // --- AVL ---
-            std::vector<unsigned long long> avlPer;
-            SearchResult avlRes;
             long long avlInsNs;
+            Bucketed avlB;
             {
                 AVLTree avl;
                 avlInsNs = insertAll(&avl, insertKeys);
-                avlRes = searchAll(&avl, queries, dumpSeries ? &avlPer : nullptr);
+                avlB = searchBucketed(&avl, queries, MAX_PERSEARCH_SAMPLES);
             }
 
             // --- Splay ---
-            std::vector<unsigned long long> splayPer;
-            SearchResult splayRes;
             long long splayInsNs;
+            Bucketed splayB;
             {
                 SplayTree splay;
                 splayInsNs = insertAll(&splay, insertKeys);
-                splayRes = searchAll(&splay, queries, dumpSeries ? &splayPer : nullptr);
+                splayB = searchBucketed(&splay, queries, MAX_PERSEARCH_SAMPLES);
             }
 
             totals << CONFIG_NAMES[cfg] << ',' << N << ",AVL," << avlInsNs << ','
-                   << avlRes.timeNs << ',' << avlRes.totalCost << ','
-                   << (double)avlRes.totalCost / M << '\n';
+                   << avlB.totalTimeNs << ',' << avlB.totalCost << ','
+                   << (double)avlB.totalCost / M << '\n';
             totals << CONFIG_NAMES[cfg] << ',' << N << ",Splay," << splayInsNs << ','
-                   << splayRes.timeNs << ',' << splayRes.totalCost << ','
-                   << (double)splayRes.totalCost / M << '\n';
+                   << splayB.totalTimeNs << ',' << splayB.totalCost << ','
+                   << (double)splayB.totalCost / M << '\n';
 
             std::cerr << "  cfg " << CONFIG_NAMES[cfg] << "  N=" << N
                       << "  M=" << M
-                      << "  AVL avg=" << (double)avlRes.totalCost / M
-                      << "  Splay avg=" << (double)splayRes.totalCost / M << '\n';
+                      << "  AVL avg=" << (double)avlB.totalCost / M
+                      << "  Splay avg=" << (double)splayB.totalCost / M << '\n';
 
-            if (dumpSeries) {
-                std::ofstream ps = openCsv(std::string("base_persearch_") +
-                                           CONFIG_NAMES[cfg] + ".csv");
-                ps << "idx,avl_cost,splay_cost,avl_cumavg,splay_cumavg\n";
-                size_t stride = std::max<size_t>(1, M / MAX_PERSEARCH_SAMPLES);
-                double avlSum = 0, splaySum = 0;
-                for (size_t i = 0; i < M; ++i) {
-                    avlSum += avlPer[i];
-                    splaySum += splayPer[i];
-                    if (i % stride == 0) {
-                        ps << i << ',' << avlPer[i] << ',' << splayPer[i] << ','
-                           << avlSum / (i + 1) << ',' << splaySum / (i + 1) << '\n';
-                    }
-                }
+            // Serie por-búsqueda (tiempo y costo) de ambas estructuras para los
+            // gráficos de línea de 7.2. Un archivo por (configuración, N).
+            std::ofstream ps = openCsv(std::string("base_persearch_") +
+                                       CONFIG_NAMES[cfg] + "_N" +
+                                       std::to_string(N) + ".csv");
+            ps << "idx,avl_time_ns,splay_time_ns,avl_cost,splay_cost\n";
+            for (size_t k = 0; k < avlB.idx.size(); ++k) {
+                ps << avlB.idx[k] << ',' << avlB.timePerSearch[k] << ','
+                   << splayB.timePerSearch[k] << ',' << avlB.costPerSearch[k] << ','
+                   << splayB.costPerSearch[k] << '\n';
             }
         }
     }

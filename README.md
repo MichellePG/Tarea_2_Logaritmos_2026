@@ -124,7 +124,10 @@ reporta junto con el tiempo de reloj (`std::chrono::steady_clock`).
 Bloques experimentales:
 
 - **Escenarios base (7.2):** para `N ∈ {2^10,…,2^14}` y las 4 configuraciones
-  (inserción aleatoria/ordenada × búsqueda uniforme/sesgada).
+  (inserción aleatoria/ordenada × búsqueda uniforme/sesgada). Se registra el
+  **tiempo (y costo) de cada búsqueda a lo largo de toda la secuencia**, para
+  graficar tiempo por búsqueda vs índice con ambas estructuras superpuestas
+  (un gráfico por escenario y por N).
 - **Sequential Access Theorem (7.3.1.a):** secuencia de claves crecientes.
 - **Working Set Theorem (7.3.1.b):** `W ∈ {10, 10², …, 10⁶}`.
 - **Traversal Conjecture (bonus 7.4):** preorden de `T₁` buscado en `T₂`.
@@ -175,7 +178,14 @@ pip install -r requirements.txt
 python3 scripts/plot.py
 ```
 
-Los gráficos PNG se generan en `outputs/plots/`.
+Los gráficos PNG se generan en `outputs/plots/`:
+
+- **7.2:** `base_persearch_time_{a,b,c,d}.png` (tiempo por búsqueda vs índice,
+  un subgráfico por N, AVL y Splay superpuestos) y `base_persearch_cost_*.png`
+  (la misma vista usando costo en nodos visitados, más estable al ruido).
+  Complementarios: `base_avg_cost.png`, `base_avg_time.png` (promedios vs N).
+- **7.3.1.a:** `seq_access.png`  ·  **7.3.1.b:** `working_set.png`
+- **7.4 (bonus):** `traversal.png`
 
 ## Limpieza
 

@@ -23,7 +23,9 @@ Si no se tiene uv:
 """
 
 import os
+import glob
 import math
+import re
 
 import numpy as np
 import pandas as pd
@@ -65,19 +67,69 @@ def fit_constant(y, shape):
 
 # 7.2  Escenarios base
 
+CONFIG_TITLES = {
+    "a": "(a) Inserción aleatoria, búsqueda uniforme",
+    "b": "(b) Inserción aleatoria, búsqueda sesgada",
+    "c": "(c) Inserción ordenada, búsqueda uniforme",
+    "d": "(d) Inserción ordenada, búsqueda sesgada",
+}
+
+
+def _persearch_files(cfg):
+    """Devuelve [(N, ruta)] de los CSV por-búsqueda de la configuración cfg."""
+    pat = os.path.join(RESULTS, f"base_persearch_{cfg}_N*.csv")
+    out = []
+    for f in glob.glob(pat):
+        m = re.search(r"_N(\d+)\.csv$", f)
+        if m:
+            out.append((int(m.group(1)), f))
+    return sorted(out)
+
+
+def plot_base_persearch():
+    """Gráficos requeridos por 7.2: tiempo (y costo) de ejecución por búsqueda
+    vs índice de búsqueda, con AVL y Splay en un mismo gráfico, separados por
+    escenario y por N."""
+    for metric, ycol_avl, ycol_splay, ylabel, fname in [
+        ("tiempo", "avl_time_ns", "splay_time_ns",
+         "Tiempo por búsqueda (ns)", "time"),
+        ("costo", "avl_cost", "splay_cost",
+         "Costo por búsqueda (nodos visitados)", "cost"),
+    ]:
+        for cfg in ["a", "b", "c", "d"]:
+            files = _persearch_files(cfg)
+            if not files:
+                continue
+            ncols = 2 if len(files) > 1 else 1
+            nrows = math.ceil(len(files) / ncols)
+            fig, axes = plt.subplots(nrows, ncols,
+                                     figsize=(7 * ncols, 3.6 * nrows),
+                                     squeeze=False)
+            for ax in axes.flat:
+                ax.set_visible(False)
+            for (N, f), ax in zip(files, axes.flat):
+                ax.set_visible(True)
+                s = pd.read_csv(f)
+                ax.plot(s["idx"], s[ycol_avl], label="AVL", lw=1)
+                ax.plot(s["idx"], s[ycol_splay], label="Splay", lw=1)
+                ax.set_title(f"N = {N}  (M = {10 * N} búsquedas)")
+                ax.set_xlabel("Índice de búsqueda")
+                ax.set_ylabel(ylabel)
+                ax.legend()
+                ax.grid(True, alpha=0.3)
+            fig.suptitle(f"7.2 {CONFIG_TITLES[cfg]} — {metric} por búsqueda")
+            save(fig, f"base_persearch_{fname}_{cfg}.png")
+
+
 def plot_base():
+    plot_base_persearch()
+
     if not exists("base_totals.csv"):
         return
     df = pd.read_csv(path("base_totals.csv"))
     configs = ["a", "b", "c", "d"]
-    titles = {
-        "a": "(a) Inserción aleatoria, búsqueda uniforme",
-        "b": "(b) Inserción aleatoria, búsqueda sesgada",
-        "c": "(c) Inserción ordenada, búsqueda uniforme",
-        "d": "(d) Inserción ordenada, búsqueda sesgada",
-    }
 
-    # --- Costo medio por búsqueda vs N ---
+    # --- (complementario) Costo medio por búsqueda vs N ---
     fig, axes = plt.subplots(2, 2, figsize=(13, 9))
     for ax, cfg in zip(axes.flat, configs):
         sub = df[df["config"] == cfg]
@@ -90,49 +142,31 @@ def plot_base():
             np.log2(ns),
         )
         ax.plot(ns, ref * np.log2(ns), "k--", alpha=0.5, label="c·log₂N")
-        ax.set_title(titles[cfg])
+        ax.set_title(CONFIG_TITLES[cfg])
         ax.set_xlabel("N")
         ax.set_ylabel("Costo medio (nodos visitados / búsqueda)")
         ax.set_xscale("log", base=2)
         ax.legend()
         ax.grid(True, alpha=0.3)
-    fig.suptitle("7.2 — Costo medio por búsqueda (AVL vs Splay)")
+    fig.suptitle("7.2 (complementario) — Costo medio por búsqueda vs N")
     save(fig, "base_avg_cost.png")
 
-    # --- Tiempo medio por búsqueda vs N ---
+    # --- (complementario) Tiempo medio por búsqueda vs N ---
     fig, axes = plt.subplots(2, 2, figsize=(13, 9))
     for ax, cfg in zip(axes.flat, configs):
         sub = df[df["config"] == cfg]
         for struct, marker in [("AVL", "o"), ("Splay", "s")]:
             s = sub[sub["struct"] == struct].sort_values("N")
-            # tiempo total de búsqueda / M ; M = 10^c * N con c = 1 -> 10N
-            m = 10 * s["N"]
+            m = 10 * s["N"]  # M = 10^c * N con c = 1
             ax.plot(s["N"], s["search_time_ns"] / m, marker=marker, label=struct)
-        ax.set_title(titles[cfg])
+        ax.set_title(CONFIG_TITLES[cfg])
         ax.set_xlabel("N")
         ax.set_ylabel("Tiempo medio por búsqueda (ns)")
         ax.set_xscale("log", base=2)
         ax.legend()
         ax.grid(True, alpha=0.3)
-    fig.suptitle("7.2 — Tiempo medio por búsqueda (AVL vs Splay)")
+    fig.suptitle("7.2 (complementario) — Tiempo medio por búsqueda vs N")
     save(fig, "base_avg_time.png")
-
-    # --- Naturaleza amortizada: promedio acumulado por búsqueda ---
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
-    for ax, cfg in zip(axes.flat, configs):
-        f = f"base_persearch_{cfg}.csv"
-        if not exists(f):
-            continue
-        s = pd.read_csv(path(f))
-        ax.plot(s["idx"], s["avl_cumavg"], label="AVL (prom. acumulado)")
-        ax.plot(s["idx"], s["splay_cumavg"], label="Splay (prom. acumulado)")
-        ax.set_title(titles[cfg])
-        ax.set_xlabel("Índice de búsqueda")
-        ax.set_ylabel("Costo promedio acumulado")
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-    fig.suptitle("7.2 — Naturaleza amortizada del Splay Tree (N máx)")
-    save(fig, "base_amortized.png")
 
 
 # 7.3.1.a  Sequential Access Theorem
